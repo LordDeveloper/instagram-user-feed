@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Instagram;
 
 use GuzzleHttp\{Client, ClientInterface};
+use Instagram\Exception\InstagramAuthException;
 use Instagram\Utils\CacheHelper;
 use GuzzleHttp\Cookie\{SetCookie, CookieJar};
-use Instagram\Auth\{Checkpoint\ImapClient, Login, Session};
+use Instagram\Auth\{ChangePassword, Checkpoint\ImapClient, Login, Session};
 use Instagram\Exception\InstagramException;
 use Instagram\Hydrator\{LocationHydrator,
     MediaHydrator,
@@ -129,6 +130,33 @@ class Api
         }
 
         $this->session = new Session($cookies);
+    }
+
+    public function changePassword($username, $currentPassword, $newPassword)
+    {
+        $changePassword = new ChangePassword($this->client, $this->session);
+
+        $changed = $changePassword->change($currentPassword, $newPassword);
+
+        if (isset($changed->status)) {
+            if ($changed->status === 'ok') {
+                $cookies = $changed->cookies;
+
+                $sessionData = $this->cachePool->getItem(Session::SESSION_KEY . '.' . CacheHelper::sanitizeUsername($username));
+                $sessionData->set($cookies);
+
+                $this->cachePool->save($sessionData);
+                $this->session = new Session($cookies);
+
+                return $changed->status;
+            }
+
+            elseif ($changed->status === 'fail' && isset($changed->message->errors)) {
+                throw new InstagramAuthException(implode(', ', $changed->message->errors));
+            }
+        }
+
+        return false;
     }
 
     /**

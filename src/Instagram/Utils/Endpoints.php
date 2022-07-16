@@ -22,6 +22,10 @@ class Endpoints
 
     const COMMENT_URL = 'https://www.instagram.com/web/comments/{{postId}}/add/';
 
+    const SHARED_DATA = 'https://www.instagram.com/data/shared_data/';
+
+    const CHANGE_PASSWORD = 'https://www.instagram.com/accounts/password/change/';
+
     /**
      * @param int $accountId
      *
